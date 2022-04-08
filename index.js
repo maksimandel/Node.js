@@ -15,9 +15,11 @@ nextPrime:
     for (let i = min; i <= max; i++) {
         for (let j = 2; j < i; j++) {
             if (i % j === 0) continue nextPrime;
+
             // if (i % j !== 0) {
             //     console.log(colors.red('Простых чисел в диапазоне нет'))
             // }
+
         }
         console.log(colors.green(i));
     }
