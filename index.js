@@ -1,26 +1,13 @@
-const readline = require('readline-sync');
 const colors = require('colors');
 
-console.log('Введите минимальное значение')
-let min = readline.prompt();
-console.log('Введите максимальное значение')
-let max = readline.prompt();
-
-
-if (isNaN(min) || isNaN(max)) {
-    console.log(colors.red('Аргумент не считается числом'))
-}
-
-nextPrime:
-    for (let i = min; i <= max; i++) {
-        for (let j = 2; j < i; j++) {
-            if (i % j === 0) continue nextPrime;
-
-            // Работает не верно
-            // if (i % j !== 0) {
-            //     console.log(colors.red('Простых чисел в диапазоне нет'))
-            // }
-
-        }
-        console.log(colors.green(i));
+let time = setInterval(() => {
+    let date = new Date();
+    let date2 = new Date(2022, 4, 14, 15, 14, 30);
+    console.log(date.getFullYear() + " " + (date.getMonth() + 1) + " " + date.getDate() + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds());
+    if (date === date2) {
+        clearInterval(time);
+        console.log(colors.red('Вы достигли назначенного времени'))
     }
+}, 1000);
+
+console.log(time);
