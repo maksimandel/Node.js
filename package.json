@@ -1,6 +1,8 @@
 {
   "dependencies": {
     "colors": "^1.4.0",
+    "date-fns": "^2.28.0",
+    "moment": "^2.29.2",
     "readline-sync": "^1.4.10"
   }
 }
