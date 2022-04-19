@@ -1,13 +1,26 @@
-const colors = require('colors');
+const fs = require('fs');
+const readline = require('readline')
 
-let time = setInterval(() => {
-    let date = new Date();
-    let date2 = new Date(2022, 4, 14, 15, 14, 30);
-    console.log(date.getFullYear() + " " + (date.getMonth() + 1) + " " + date.getDate() + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds());
-    if (date === date2) {
-        clearInterval(time);
-        console.log(colors.red('Вы достигли назначенного времени'))
+const readStream = fs.createReadStream('access.log', 'utf8');
+const ip1 = fs.createWriteStream('89.123.1.41.log');
+const ip2 = fs.createWriteStream('34.48.240.111.log');
+
+let numStr = 0;
+
+const rl = readline.createInterface({
+    input: readStream,
+    terminal: true
+});
+
+rl.on('line', (line) => {
+    if (line.includes('89.123.1.41')) {
+        ip1.write(line + '\n')
     }
-}, 1000);
 
-console.log(time);
+    if (line.includes('34.48.248.111')) {
+        ip2.write(line + '\n')
+    }
+
+    console.log(++numStr)
+})
+
