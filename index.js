@@ -1,13 +1,60 @@
-const colors = require('colors');
+const fs = require('fs/promises');
+const {lstatSync} = require('fs');
+const inquirer = require('inquirer');
+const yargs = require('yargs');
+const path = require('path');
 
-let time = setInterval(() => {
-    let date = new Date();
-    let date2 = new Date(2022, 4, 14, 15, 14, 30);
-    console.log(date.getFullYear() + " " + (date.getMonth() + 1) + " " + date.getDate() + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds());
-    if (date === date2) {
-        clearInterval(time);
-        console.log(colors.red('Вы достигли назначенного времени'))
+let currentDirectory = process.cwd();
+const options = yargs
+    .positional('d', {
+        describe: 'Path to directory',
+        default: process.cwd(),
+    })
+    .positional('p', {
+        describe: 'Pattern',
+        default: '',
+    }).argv;
+console.log(options);
+
+class ListItem {
+    constructor(path, fileName) {
+        this.path = path;
+        this.fileName = fileName;
     }
-}, 1000);
 
-console.log(time);
+    get isDir() {
+        return lstatSync(this.path).isDirectory();
+    }
+}
+
+const run = async () => {
+    const list = await fs.readdir(currentDirectory);
+    const items = list.map(fileName =>
+        new ListItem(path.join(currentDirectory, fileName), fileName));
+
+    const item = await inquirer
+        .prompt([
+            {
+                name: 'fileName',
+                type: 'list',
+                message: `Choose: ${currentDirectory}`,
+                choices: items.map(item => ({name: item.fileName, value: item})),
+            }
+        ])
+        .then(answer => answer.fileName);
+
+    if (item.isDir) {
+        currentDirectory = item.path;
+        return await run();
+    } else {
+        const data = await fs.readFile(item.path, 'utf-8');
+
+        if (!options.p) console.log(data);
+        else {
+            const regExp = new RegExp(options.p, 'igm');
+            console.log(data.match(regExp));
+        }
+    }
+}
+
+run();
