@@ -1,13 +1,42 @@
-const colors = require('colors');
+const http = require('http');
+const path = require('path');
+const fs = require('fs');
 
-let time = setInterval(() => {
-    let date = new Date();
-    let date2 = new Date(2022, 4, 14, 15, 14, 30);
-    console.log(date.getFullYear() + " " + (date.getMonth() + 1) + " " + date.getDate() + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds());
-    if (date === date2) {
-        clearInterval(time);
-        console.log(colors.red('Вы достигли назначенного времени'))
-    }
-}, 1000);
+(async () => {
+    const isFile = (path) => fs.lstatSync(path).isFile();
 
-console.log(time);
+    http.createServer( (req, res) => {
+        // console.log(req.url);
+        const fullPath = path.join(process.cwd(), req.url);
+        console.log(fullPath);
+        if (!fs.existsSync(fullPath)) return res.end('File or directory not found');
+
+        if (isFile(fullPath)) {
+            return fs.createReadStream(fullPath).pipe(res);
+        }
+
+        let linksList = '';
+
+        // advanced
+        const urlParams = req.url.match(/[\d\w\.]+/gi);
+
+        if (urlParams) {
+            urlParams.pop();
+            const prevUrl = urlParams.join('/');
+            linksList = urlParams.length ? `<li><a href="/${prevUrl}">..</a></li>` : '<li><a href="/">..</a></li>';
+        }
+        //
+
+        fs.readdirSync(fullPath)
+            .forEach(fileName => {
+                const filePath = path.join(req.url, fileName);
+                linksList += `<li><a href="${filePath}">${fileName}</a></li>`;
+            });
+        const HTML = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8')
+            .replace('##links', linksList);
+        res.writeHead(200, {
+            'Content-Type': 'text/html',
+        })
+        return res.end(HTML);
+    }).listen(5555);
+})();
