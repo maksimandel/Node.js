@@ -1,60 +1,42 @@
-const fs = require('fs/promises');
-const {lstatSync} = require('fs');
-const inquirer = require('inquirer');
-const yargs = require('yargs');
+const http = require('http');
 const path = require('path');
+const fs = require('fs');
 
-let currentDirectory = process.cwd();
-const options = yargs
-    .positional('d', {
-        describe: 'Path to directory',
-        default: process.cwd(),
-    })
-    .positional('p', {
-        describe: 'Pattern',
-        default: '',
-    }).argv;
-console.log(options);
+(async () => {
+    const isFile = (path) => fs.lstatSync(path).isFile();
 
-class ListItem {
-    constructor(path, fileName) {
-        this.path = path;
-        this.fileName = fileName;
-    }
+    http.createServer( (req, res) => {
+        // console.log(req.url);
+        const fullPath = path.join(process.cwd(), req.url);
+        console.log(fullPath);
+        if (!fs.existsSync(fullPath)) return res.end('File or directory not found');
 
-    get isDir() {
-        return lstatSync(this.path).isDirectory();
-    }
-}
-
-const run = async () => {
-    const list = await fs.readdir(currentDirectory);
-    const items = list.map(fileName =>
-        new ListItem(path.join(currentDirectory, fileName), fileName));
-
-    const item = await inquirer
-        .prompt([
-            {
-                name: 'fileName',
-                type: 'list',
-                message: `Choose: ${currentDirectory}`,
-                choices: items.map(item => ({name: item.fileName, value: item})),
-            }
-        ])
-        .then(answer => answer.fileName);
-
-    if (item.isDir) {
-        currentDirectory = item.path;
-        return await run();
-    } else {
-        const data = await fs.readFile(item.path, 'utf-8');
-
-        if (!options.p) console.log(data);
-        else {
-            const regExp = new RegExp(options.p, 'igm');
-            console.log(data.match(regExp));
+        if (isFile(fullPath)) {
+            return fs.createReadStream(fullPath).pipe(res);
         }
-    }
-}
 
-run();
+        let linksList = '';
+
+        // advanced
+        const urlParams = req.url.match(/[\d\w\.]+/gi);
+
+        if (urlParams) {
+            urlParams.pop();
+            const prevUrl = urlParams.join('/');
+            linksList = urlParams.length ? `<li><a href="/${prevUrl}">..</a></li>` : '<li><a href="/">..</a></li>';
+        }
+        //
+
+        fs.readdirSync(fullPath)
+            .forEach(fileName => {
+                const filePath = path.join(req.url, fileName);
+                linksList += `<li><a href="${filePath}">${fileName}</a></li>`;
+            });
+        const HTML = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8')
+            .replace('##links', linksList);
+        res.writeHead(200, {
+            'Content-Type': 'text/html',
+        })
+        return res.end(HTML);
+    }).listen(5555);
+})();
